@@ -1,7 +1,7 @@
-# JX11 Digital Synthesizer
+# JX11 Synthesizer
 
-A digital synthesizer from The Audio Programmer's book: ["Creating Synthesizer Plug-ins with C++ and JUCE"](https://www.theaudioprogrammer.com/synth-plugin-book).
+This is the jx11 digital synthesizer The Audio Programmer's book ["Creating Synthesizer Plug-Ins with C++ and JUCE"](https://www.theaudioprogrammer.com/synth-plugin-book) by Matthijs Hollemans.
 
-## Schematic
+# Schematic
 
-![schematic](img/synth-schematic.jpg)
+![Synth Schematic](img/synth-schematic.jpg)
