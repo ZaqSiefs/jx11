@@ -28,11 +28,32 @@ void Synth::deallocateRecources()
 void Synth::reset()
 {
     voice.reset();
+    noiseGen.reset();
 }
 
 void Synth::render(float **outputBuffers, int sampleCount)
 {
+    float* outputBufferLeft = outputBuffers[0];
+    float* outputBufferRight = outputBuffers[1];
     
+    //1
+    for (int sample = 0; sample < sampleCount; ++sample) {
+        //2
+        float noise = noiseGen.nextValue();
+        
+        //3
+        
+        float output = 0.0f;
+        if (voice.note > 0) {
+            output = noise * (voice.velocity / 127.0f) * 0.5f;  //4
+        }
+        
+        //5
+        outputBufferLeft[sample] = output;
+        if (outputBufferRight != nullptr) {
+            outputBufferRight[sample] = output;
+        }
+    }
 }
 
 void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
