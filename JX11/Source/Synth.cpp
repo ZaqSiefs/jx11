@@ -38,8 +38,6 @@ void Synth::render(float **outputBuffers, int sampleCount)
     float* outputBufferRight = outputBuffers[1];
     
     for (int sample = 0; sample < sampleCount; ++sample) {
-        float noise = noiseGen.nextValue();
-        
         float output = 0.0f;
         if (voice.note > 0) {
             output = voice.render();
@@ -80,7 +78,7 @@ void Synth::noteOn(int note, int vel)
 {
     voice.note = note;
     
-    float freq = 261.63;
+    float freq = 440.0f * std::exp2(float(note - 69) / 12.0f);
     
     voice.osc.amp = (vel / 127.0f) * 0.5f;
     voice.osc.inc = freq / sampleRate;
