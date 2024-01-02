@@ -8,6 +8,7 @@
     <GROUP id="{F6C11DBB-106B-47A5-F537-2218608DA525}" name="Source">
       <FILE id="t7xcN2" name="NoiseGenerator.h" compile="0" resource="0"
             file="Source/NoiseGenerator.h"/>
+      <FILE id="AmFq0z" name="Oscillator.h" compile="0" resource="0" file="Source/Oscillator.h"/>
       <FILE id="bMiS5h" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="kNNBrv" name="PluginProcessor.h" compile="0" resource="0"
