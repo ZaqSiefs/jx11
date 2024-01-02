@@ -148,6 +148,38 @@ void JX11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     }
 }
 
+void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
+                                             juce::MidiBuffer &midiMessages)
+{
+    int bufferOffset = 0;
+    
+    for (const auto metadata : midiMessages) {
+       // render the audio that happens before this event (if any).
+        int samplesThisSegment = metadata.samplePosition - bufferOffset;
+        if (samplesThisSegment > 0) {
+            render(buffer, samplesThisSegment, bufferOffset);
+            bufferOffset += samplesThisSegment;
+        }
+        
+        // handle the event. Ignore MIDI messages such as sysex.
+        if (metadata.numBytes <= 3) {
+            uint8_t data1 = (metadata.numBytes >= 2) ? metadata.data[1] : 0;
+            uint8_t data2 = (metadata.numBytes >= 3) ? metadata.data[2] : 0;
+            handleMIDI(metadata.data[0], data1, data2);
+        }
+    }
+    
+    // render the audio after the last MIDI event.  If there were no MIDI
+    // events at all, this renders the entire buffer.
+    
+    int samplesLastSegment = buffer.getNumSamples() - bufferOffset;
+    if (samplesLastSegment > 0) {
+        render(buffer, samplesLastSegment, bufferOffset);
+    }
+    
+    midiMessages.clear();
+}
+
 //==============================================================================
 bool JX11AudioProcessor::hasEditor() const
 {
