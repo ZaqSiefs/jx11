@@ -80,10 +80,10 @@ void Synth::noteOn(int note, int vel)
 {
     voice.note = note;
     
+    float freq = 261.63;
+    
     voice.osc.amp = (vel / 127.0f) * 0.5f;
-    voice.osc.freq = 261.63;
-    voice.osc.sampleRate = sampleRate;
-    voice.osc.phaseOffset = 0.0f;
+    voice.osc.inc = freq / sampleRate;
     voice.osc.reset();
 }
 
