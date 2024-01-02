@@ -95,12 +95,15 @@ void JX11AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    synth.allocateResources(sampleRate, samplesPerBlock);
+    reset();
 }
 
 void JX11AudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    synth.deallocateRecources();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -184,15 +187,18 @@ void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
 
 void JX11AudioProcessor::handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2)
 {
-    char s[16];
-    snprintf(s, 16, "%02hhX %02hhX %02hhX", data0, data1, data2);
-    DBG(s);
+    synth.midiMessage(data0, data1, data2);
 }
 
 void JX11AudioProcessor::render(
     juce::AudioBuffer<float> &buffer, int sampleCount, int bufferOffset)
 {
     
+}
+
+void JX11AudioProcessor::reset()
+{
+    synth.reset();
 }
 
 //==============================================================================
