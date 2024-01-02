@@ -182,6 +182,19 @@ void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
     midiMessages.clear();
 }
 
+void JX11AudioProcessor::handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2)
+{
+    char s[16];
+    snprintf(s, 16, "%02hhX %02hhX %02hhX", data0, data1, data2);
+    DBG(s);
+}
+
+void JX11AudioProcessor::render(
+    juce::AudioBuffer<float> &buffer, int sampleCount, int bufferOffset)
+{
+    
+}
+
 //==============================================================================
 bool JX11AudioProcessor::hasEditor() const
 {
