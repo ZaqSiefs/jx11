@@ -146,6 +146,8 @@ void JX11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
         buffer.clear (i, 0, buffer.getNumSamples());
     }
+    
+    splitBufferByEvents(buffer, midiMessages);
 }
 
 void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
