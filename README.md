@@ -15,3 +15,13 @@ Above is the general signal flow schematic of this plugin. The image is taken di
 ![Plugin Lifecycle](img/plugin-lifecycle.jpg)
 
 above is the lifecycle of most audio plugins, and is true for this plugin. The image is taken directly from the book.
+
+# Useful Links
+
+[JUCE API documentation](https://docs.juce.com)
+
+[JUCE Tutorials](https://juce.com/learn/tutorials)
+
+[JUCE Forums](https://forum.juce.com)
+
+[JUCE Source Code](https://github.com/juce-framework/JUCE)
