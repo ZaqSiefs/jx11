@@ -83,6 +83,9 @@ void Synth::noteOn(int note, int vel)
     voice.osc.amp = (vel / 127.0f) * 0.5f;
     voice.osc.inc = freq / sampleRate;
     voice.osc.reset();
+    
+    voice.osc.freq = freq;
+    voice.osc.sampleRate = sampleRate;
 }
 
 void Synth::noteOff(int note)
