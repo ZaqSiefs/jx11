@@ -15,7 +15,7 @@ namespace ParameterID
 {
 #define PARAMETER_ID(str) const juce::ParameterID str(#str, 1);
 
-PARAMETER_ID(osc_mix);
+PARAMETER_ID(oscMix);
 PARAMETER_ID(oscTune);
 PARAMETER_ID(oscFine);
 PARAMETER_ID(glideMode);
