@@ -46,6 +46,8 @@ above is the lifecycle of most audio plugins, and is true for this plugin. The i
 
 [Osc and Filter algorithms for Analog Synthesis](https://www.researchgate.net/publication/220386519_Oscillator_and_Filter_Algorithms_for_Virtual_Analog_Synthesis)
 
+[Graphing Calculator](https://www.desmos.com/calculator)
+
 ### User Presets
 
 [Youtube Tutorial](https://www.youtube.com/watch?v=YwAtWuGA4Cg)
