@@ -18,6 +18,10 @@ above is the lifecycle of most audio plugins, and is true for this plugin. The i
 
 # Useful Links
 
+### The Audio Programer
+
+[JX11 Source Code](https://github.com/TheAudioProgrammer/synth-plugin-book)
+
 ### JUCE
 
 [JUCE API documentation](https://docs.juce.com)
@@ -41,3 +45,9 @@ above is the lifecycle of most audio plugins, and is true for this plugin. The i
 [BLIT synth](https://ccrma.stanford.edu/~stilti/papers/blit.pdf)
 
 [Osc and Filter algorithms for Analog Synthesis](https://www.researchgate.net/publication/220386519_Oscillator_and_Filter_Algorithms_for_Virtual_Analog_Synthesis)
+
+### User Presets
+
+[Youtube Tutorial](https://www.youtube.com/watch?v=YwAtWuGA4Cg)
+
+[Open Source Implementation](https://github.com/Chowdhury-DSP/chowdsp_utils)
