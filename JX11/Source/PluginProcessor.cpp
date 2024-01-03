@@ -90,6 +90,14 @@ void JX11AudioProcessor::changeProgramName (int index, const juce::String& newNa
 {
 }
 
+juce::AudioProcessorValueTreeState::ParameterLayout
+JX11AudioProcessor::createParameterLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+                    
+    return layout;
+}
+
 //==============================================================================
 void JX11AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
