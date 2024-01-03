@@ -16,6 +16,7 @@
       <FILE id="Mtmshf" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="W1O5Yw" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="qBBUNi" name="Preset.h" compile="0" resource="0" file="Source/Preset.h"/>
       <FILE id="cCRaZn" name="Synth.cpp" compile="1" resource="0" file="Source/Synth.cpp"/>
       <FILE id="RclxEH" name="Synth.h" compile="0" resource="0" file="Source/Synth.h"/>
       <FILE id="jfQ35l" name="Utils.h" compile="0" resource="0" file="Source/Utils.h"/>

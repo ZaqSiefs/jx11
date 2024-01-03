@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "Synth.h"
+#include "Preset.h"
 //==============================================================================
 namespace ParameterID
 {
@@ -108,6 +109,7 @@ private:
         parametersChanged.store(true);
     }
     void update();
+    void createPrograms();
     
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     
@@ -141,4 +143,7 @@ private:
     juce::AudioParameterChoice* polyModeParam;
     
     std::atomic<bool> parametersChanged {false};
+    
+    std::vector<Preset> presets;
+    int currentProgram;
 };
