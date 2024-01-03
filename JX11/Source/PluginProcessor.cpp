@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Utils.h"
 
 //==============================================================================
 JX11AudioProcessor::JX11AudioProcessor()
@@ -22,10 +23,39 @@ JX11AudioProcessor::JX11AudioProcessor()
                        )
 #endif
 {
+    castParameter(apvts, ParameterID::oscMix, oscMixParam);
+    castParameter(apvts, ParameterID::oscTune, oscTuneParam);
+    castParameter(apvts, ParameterID::oscFine, oscFineParam);
+    castParameter(apvts, ParameterID::glideMode, glideModeParam);
+    castParameter(apvts, ParameterID::glideRate, glideRateParam);
+    castParameter(apvts, ParameterID::glideBend, glideBendParam);
+    castParameter(apvts, ParameterID::filterFreq, filterFreqParam);
+    castParameter(apvts, ParameterID::filterReso, filterResoParam);
+    castParameter(apvts, ParameterID::filterEnv, filterEnvParam);
+    castParameter(apvts, ParameterID::filterLFO, filterLFOParam);
+    castParameter(apvts, ParameterID::filterVel, filterVelParam);
+    castParameter(apvts, ParameterID::filterAttack, filterAttackParam);
+    castParameter(apvts, ParameterID::filterSustain, filterSustainParam);
+    castParameter(apvts, ParameterID::filterDecay, filterDecayParam);
+    castParameter(apvts, ParameterID::filterRelease, filterReleaseParam);
+    castParameter(apvts, ParameterID::envAttack, envAttackParam);
+    castParameter(apvts, ParameterID::envDecay, envDecayParam);
+    castParameter(apvts, ParameterID::envSustain, envSustainParam);
+    castParameter(apvts, ParameterID::envRelease, envReleaseParam);
+    castParameter(apvts, ParameterID::lfoRate, lfoRateParam);
+    castParameter(apvts, ParameterID::vibrato, vibratoParam);
+    castParameter(apvts, ParameterID::noise, noiseParam);
+    castParameter(apvts, ParameterID::octave, octaveParam);
+    castParameter(apvts, ParameterID::tuning, tuningParam);
+    castParameter(apvts, ParameterID::outputLevel, outputLevelParam);
+    castParameter(apvts, ParameterID::polyMode, polyModeParam);
+    
+    apvts.state.addListener(this);
 }
 
 JX11AudioProcessor::~JX11AudioProcessor()
 {
+    apvts.state.removeListener(this);
 }
 
 //==============================================================================
@@ -90,6 +120,171 @@ void JX11AudioProcessor::changeProgramName (int index, const juce::String& newNa
 {
 }
 
+//==============================================================================
+void JX11AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    // Use this method as the place to do any pre-playback
+    // initialisation that you need..
+    synth.allocateResources(sampleRate, samplesPerBlock);
+    parametersChanged.store(true);
+    reset();
+}
+
+void JX11AudioProcessor::releaseResources()
+{
+    // When playback stops, you can use this as an opportunity to free up any
+    // spare memory, etc.
+    synth.deallocateRecources();
+}
+
+#ifndef JucePlugin_PreferredChannelConfigurations
+bool JX11AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+{
+  #if JucePlugin_IsMidiEffect
+    juce::ignoreUnused (layouts);
+    return true;
+  #else
+    // This is the place where you check if the layout is supported.
+    // In this template code we only support mono or stereo.
+    // Some plugin hosts, such as certain GarageBand versions, will only
+    // load plugins that support stereo bus layouts.
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        return false;
+
+    // This checks if the input layout matches the output layout
+   #if ! JucePlugin_IsSynth
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+        return false;
+   #endif
+
+    return true;
+  #endif
+}
+#endif
+
+void JX11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
+                                       juce::MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+
+    // In case we have more outputs than inputs, this code clears any output
+    // channels that didn't contain input data, (because these aren't
+    // guaranteed to be empty - they may contain garbage).
+    // This is here to avoid people getting screaming feedback
+    // when they first compile a plugin, but obviously you don't need to keep
+    // this code if your algorithm always overwrites all the output channels.
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
+        buffer.clear (i, 0, buffer.getNumSamples());
+    }
+    
+    bool expected = true;
+    if (isNonRealtime() || parametersChanged.compare_exchange_strong(expected, false)) {
+        update();
+    }
+    
+    splitBufferByEvents(buffer, midiMessages);
+}
+
+void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
+                                             juce::MidiBuffer &midiMessages)
+{
+    int bufferOffset = 0;
+    
+    for (const auto metadata : midiMessages) {
+       // render the audio that happens before this event (if any).
+        int samplesThisSegment = metadata.samplePosition - bufferOffset;
+        if (samplesThisSegment > 0) {
+            render(buffer, samplesThisSegment, bufferOffset);
+            bufferOffset += samplesThisSegment;
+        }
+        
+        // handle the event. Ignore MIDI messages such as sysex.
+        if (metadata.numBytes <= 3) {
+            uint8_t data1 = (metadata.numBytes >= 2) ? metadata.data[1] : 0;
+            uint8_t data2 = (metadata.numBytes >= 3) ? metadata.data[2] : 0;
+            handleMIDI(metadata.data[0], data1, data2);
+        }
+    }
+    
+    // render the audio after the last MIDI event.  If there were no MIDI
+    // events at all, this renders the entire buffer.
+    
+    int samplesLastSegment = buffer.getNumSamples() - bufferOffset;
+    if (samplesLastSegment > 0) {
+        render(buffer, samplesLastSegment, bufferOffset);
+    }
+    
+    midiMessages.clear();
+}
+
+void JX11AudioProcessor::handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2)
+{
+    synth.midiMessage(data0, data1, data2);
+}
+
+void JX11AudioProcessor::render(
+    juce::AudioBuffer<float> &buffer, int sampleCount, int bufferOffset)
+{
+    float* outputBuffers[2] = {nullptr, nullptr};
+    outputBuffers[0] = buffer.getWritePointer(0) + bufferOffset;
+    if (getTotalNumOutputChannels() > 1) {
+        outputBuffers[1] = buffer.getWritePointer(1) + bufferOffset;
+    }
+    
+    synth.render(outputBuffers, sampleCount);
+}
+
+void JX11AudioProcessor::reset()
+{
+    synth.reset();
+}
+
+//==============================================================================
+bool JX11AudioProcessor::hasEditor() const
+{
+    return true; // (change this to false if you choose to not supply an editor)
+}
+
+juce::AudioProcessorEditor* JX11AudioProcessor::createEditor()
+{
+    auto editor = new juce::GenericAudioProcessorEditor(*this);
+    editor->setSize(500, 1050);
+    return editor;
+}
+
+//==============================================================================
+void JX11AudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+{
+    // You should use this method to store your parameters in the memory block.
+    // You could do that either as raw data, or use the XML or ValueTree classes
+    // as intermediaries to make it easy to save and load complex data.
+}
+
+void JX11AudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+{
+    // You should use this method to restore your parameters from this memory block,
+    // whose contents will have been created by the getStateInformation() call.
+}
+
+//==============================================================================
+// This creates new instances of the plugin..
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new JX11AudioProcessor();
+}
+
+//==============================================================================
+void JX11AudioProcessor::update()
+{
+    float noiseMix = noiseParam->get() / 100.0f;
+    noiseMix *= noiseMix;
+    synth.noiseMix = noiseMix * 0.06f;
+}
+
+//==============================================================================
 juce::AudioProcessorValueTreeState::ParameterLayout
 JX11AudioProcessor::createParameterLayout()
 {
@@ -333,155 +528,4 @@ JX11AudioProcessor::createParameterLayout()
         juce::AudioParameterFloatAttributes().withLabel("dB")));
     
     return layout;
-}
-
-//==============================================================================
-void JX11AudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
-{
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
-    synth.allocateResources(sampleRate, samplesPerBlock);
-    reset();
-}
-
-void JX11AudioProcessor::releaseResources()
-{
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
-    synth.deallocateRecources();
-}
-
-#ifndef JucePlugin_PreferredChannelConfigurations
-bool JX11AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
-{
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-
-    // This checks if the input layout matches the output layout
-   #if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-   #endif
-
-    return true;
-  #endif
-}
-#endif
-
-void JX11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
-                                       juce::MidiBuffer& midiMessages)
-{
-    juce::ScopedNoDenormals noDenormals;
-    
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i) {
-        buffer.clear (i, 0, buffer.getNumSamples());
-    }
-    
-    splitBufferByEvents(buffer, midiMessages);
-}
-
-void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
-                                             juce::MidiBuffer &midiMessages)
-{
-    int bufferOffset = 0;
-    
-    for (const auto metadata : midiMessages) {
-       // render the audio that happens before this event (if any).
-        int samplesThisSegment = metadata.samplePosition - bufferOffset;
-        if (samplesThisSegment > 0) {
-            render(buffer, samplesThisSegment, bufferOffset);
-            bufferOffset += samplesThisSegment;
-        }
-        
-        // handle the event. Ignore MIDI messages such as sysex.
-        if (metadata.numBytes <= 3) {
-            uint8_t data1 = (metadata.numBytes >= 2) ? metadata.data[1] : 0;
-            uint8_t data2 = (metadata.numBytes >= 3) ? metadata.data[2] : 0;
-            handleMIDI(metadata.data[0], data1, data2);
-        }
-    }
-    
-    // render the audio after the last MIDI event.  If there were no MIDI
-    // events at all, this renders the entire buffer.
-    
-    int samplesLastSegment = buffer.getNumSamples() - bufferOffset;
-    if (samplesLastSegment > 0) {
-        render(buffer, samplesLastSegment, bufferOffset);
-    }
-    
-    midiMessages.clear();
-}
-
-void JX11AudioProcessor::handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2)
-{
-    synth.midiMessage(data0, data1, data2);
-}
-
-void JX11AudioProcessor::render(
-    juce::AudioBuffer<float> &buffer, int sampleCount, int bufferOffset)
-{
-    float* outputBuffers[2] = {nullptr, nullptr};
-    outputBuffers[0] = buffer.getWritePointer(0) + bufferOffset;
-    if (getTotalNumOutputChannels() > 1) {
-        outputBuffers[1] = buffer.getWritePointer(1) + bufferOffset;
-    }
-    
-    synth.render(outputBuffers, sampleCount);
-}
-
-void JX11AudioProcessor::reset()
-{
-    synth.reset();
-}
-
-//==============================================================================
-bool JX11AudioProcessor::hasEditor() const
-{
-    return true; // (change this to false if you choose to not supply an editor)
-}
-
-juce::AudioProcessorEditor* JX11AudioProcessor::createEditor()
-{
-    auto editor = new juce::GenericAudioProcessorEditor(*this);
-    editor->setSize(500, 1050);
-    return editor;
-}
-
-//==============================================================================
-void JX11AudioProcessor::getStateInformation (juce::MemoryBlock& destData)
-{
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-}
-
-void JX11AudioProcessor::setStateInformation (const void* data, int sizeInBytes)
-{
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-}
-
-//==============================================================================
-// This creates new instances of the plugin..
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
-{
-    return new JX11AudioProcessor();
 }
