@@ -28,16 +28,20 @@ public:
     // Params
     
     float noiseMix;
-    
     float envAttack;
     float envDecay;
     float envSustain;
     float envRelease;
+    float oscMix;
+    float detune;
+    float tune;
     
 private:
     float sampleRate;
     Voice voice;
     void noteOn(int note, int velocity);
     void noteOff(int note);
+    float calcPeriod(int note) const;
     NoiseGenerator noiseGen;
+    float pitchBend;
 };

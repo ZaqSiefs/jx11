@@ -203,7 +203,7 @@ bool JX11AudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) con
 }
 #endif
 
-void JX11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
+void JX11AudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
                                        juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -262,7 +262,7 @@ void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
 
 void JX11AudioProcessor::handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2)
 {
-    if((data0 & 0xF0) == 0xC0) {
+    if ((data0 & 0xF0) == 0xC0) {
         if (data1 < presets.size()) {
             setCurrentProgram(data1);
         }
@@ -353,10 +353,22 @@ void JX11AudioProcessor::update()
                                     * std::exp(5.5f - 0.075f * envRelease));
     }
     
+    synth.oscMix = oscMixParam->get() / 100.0f;
+    
     
     float noiseMix = noiseParam->get() / 100.0f;
     noiseMix *= noiseMix;
     synth.noiseMix = noiseMix * 0.06f;
+    
+    float semi = oscTuneParam->get();
+    float cent = oscFineParam->get();
+    synth.detune = std::pow(1.059463094359f, -semi - 0.01f * cent);
+    
+    float octave = octaveParam->get();
+    float tuning = tuningParam->get();
+    float tuneInSemi = -36.3763f - 12.0f * octave - tuning / 100.0f;
+    
+    synth.tune = sampleRate * std::exp(0.05776226505f * tuneInSemi);
 }
 
 //==============================================================================

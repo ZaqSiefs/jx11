@@ -30,24 +30,34 @@ void Synth::reset()
 {
     voice.reset();
     noiseGen.reset();
+    pitchBend = 1.0f;
 }
 
-void Synth::render(float **outputBuffers, int sampleCount)
+void Synth::render(float** outputBuffers, int sampleCount)
 {
     float* outputBufferLeft = outputBuffers[0];
     float* outputBufferRight = outputBuffers[1];
     
+    voice.osc1.period = voice.period * pitchBend;
+    voice.osc2.period = voice.osc1.period * detune;
+    
     for (int sample = 0; sample < sampleCount; ++sample) {
         float noise = noiseGen.nextValue() * noiseMix;
-        float output = 0.0f;
+        
+        float outputLeft = 0.0f;
+        float outputRight = 0.0f;
         
         if (voice.env.isActive()) {
-            output = voice.render(noise);
+            float output = voice.render(noise);
+            outputLeft += output * voice.panLeft;
+            outputRight += output * voice.panRight;
         }
         
-        outputBufferLeft[sample] = output;
         if (outputBufferRight != nullptr) {
-            outputBufferRight[sample] = output;
+            outputBufferLeft[sample] = outputLeft;
+            outputBufferRight[sample] = outputRight;
+        } else {
+            outputBufferLeft[sample] = (outputLeft + outputRight) * 0.5f;
         }
     }
     
@@ -68,7 +78,7 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
             break;
             
         // Note On
-        case 0x90:
+        case 0x90: {
             uint8_t note = data1 & 0x7F;
             uint8_t velo = data2 & 0x7F;
             if (velo > 0) {
@@ -77,25 +87,37 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
                 noteOff(note);
             }
             break;
+        }
+            
+        // Pitch Bend
+        case 0xE0:
+            pitchBend = std::exp(-0.000014102f * float(data1 + 128 * data2 - 8192));
+            break;
     }
 }
 
 void Synth::noteOn(int note, int vel)
 {
     voice.note = note;
-    
-    float freq = 440.0f * std::exp2(float(note - 69) / 12.0f);
-    
-    voice.osc.amp = (vel / 127.0f) * 0.5f;
-    voice.osc.period = sampleRate / freq;
-    voice.osc.reset();
+    voice.updatePanning();
 
+    float period = calcPeriod(note);
+    voice.period = period;
+    
+    voice.osc1.amp = (vel / 127.0f) * 0.5f;
+    voice.osc1.reset(); // remove if reset on trigger is undesireable.
+    
+    voice.osc2.amp = voice.osc1.amp * oscMix;
+    voice.osc2.reset(); // remove if reset on trigger is undesireable.
+    
+    // Envelope
     Envelope& env = voice.env;
     env.attackMultiplier = envAttack;
     env.decayMultiplier = envDecay;
     env.sustainLevel = envSustain;
     env.releaseMultiplier = envRelease;
     env.attack();
+    
 
 }
 
@@ -104,4 +126,14 @@ void Synth::noteOff(int note)
     if (voice.note == note) {
         voice.release();
     }
+}
+
+float Synth::calcPeriod(int note) const
+{
+    float period = tune * std::exp(-0.05776226505f* float(note));
+    
+    // drops synth an octave if over 7350 Hz.
+    while (period < 6.0 || (period * detune) < 6.0) { period += period; }
+    
+    return period;
 }

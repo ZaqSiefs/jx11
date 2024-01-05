@@ -97,7 +97,7 @@ public:
 
 private:
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JX11AudioProcessor)
+    
     
     //==============================================================================
     // User Created
@@ -112,6 +112,11 @@ private:
     void createPrograms();
     
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    
+    std::atomic<bool> parametersChanged {false};
+    
+    std::vector<Preset> presets;
+    int currentProgram;
     
     Synth synth;
     
@@ -142,8 +147,5 @@ private:
     juce::AudioParameterFloat* outputLevelParam;
     juce::AudioParameterChoice* polyModeParam;
     
-    std::atomic<bool> parametersChanged {false};
-    
-    std::vector<Preset> presets;
-    int currentProgram;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (JX11AudioProcessor)
 };

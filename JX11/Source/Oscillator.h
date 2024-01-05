@@ -23,12 +23,10 @@ public:
     void reset()
     {
         inc = 0.0f;
-        phase = -0.5f;
-        
+        phase = 0.0f;
         sin0 = 0.0f;
         sin1 = 0.0f;
         dsin = 0.0f;
-        
         dc = 0.0;
     }
     
