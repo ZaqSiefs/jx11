@@ -24,7 +24,7 @@ void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
     sampleRate = static_cast<float>(sampleRate_);
 }
 
-void Synth::deallocateRecources()
+void Synth::deallocateResources()
 {
     
 }
@@ -36,8 +36,11 @@ void Synth::reset()
     }
     
     noiseGen.reset();
+    
     pitchBend = 1.0f;
     sustainPedalPressed = false;
+    
+    outputLevelSmoother.reset(sampleRate, 0.05);
 }
 
 void Synth::render(float** outputBuffers, int sampleCount)
@@ -65,6 +68,10 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 float output = voice.render(noise);
                 outputLeft += output * voice.panLeft;
                 outputRight += output * voice.panRight;
+                
+                float outputLevel = outputLevelSmoother.getNextValue();
+                outputLeft *= outputLevel;
+                outputRight *= outputLevel;
             }
         }
         
@@ -82,6 +89,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
             voice.env.reset();
         }
     }
+    
     
     
     preventGoingDeaf(outputBufferLeft, sampleCount);
@@ -120,7 +128,7 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
     }
 }
 
-void Synth::startVoice(int v, int note, int vel)
+void Synth::startVoice(int v, int note, int velocity)
 {
     float period = calcPeriod(v, note);
     
@@ -129,7 +137,7 @@ void Synth::startVoice(int v, int note, int vel)
     voice.note = note;
     voice.updatePanning();
     
-    voice.osc1.amp = (vel / 127.0f) * 0.5f;
+    voice.osc1.amp = volumeTrim * velocity;
     voice.osc1.reset(); // remove if reset on trigger is undesireable.
     
     voice.osc2.amp = voice.osc1.amp * oscMix;
