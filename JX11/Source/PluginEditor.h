@@ -20,7 +20,7 @@ public:
     JX11AudioProcessorEditor (JX11AudioProcessor&);
     ~JX11AudioProcessorEditor() override;
 
-    //==============================================================================
+//==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
 

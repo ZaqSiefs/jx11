@@ -44,9 +44,14 @@ public:
 private:
     void noteOn(int note, int velocity);
     void noteOff(int note);
-    float calcPeriod(int v, int note) const;
-    int findFreeVoice() const;
     void controlChange(uint8_t data1, uint8_t data2);
+    void restartMonoVoice(int note, int velocity);
+    void shiftQueuedNotes();
+    float calcPeriod(int v, int note) const;
+    int nextQueuedNote();
+    int findFreeVoice() const;
+
+    
     
     float sampleRate;
     float pitchBend;
