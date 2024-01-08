@@ -49,6 +49,11 @@ public:
     float modWheel;
     float glideRate;
     float glideBend;
+    float filterKeyTracking;
+    float filterQ;
+    float filterLFODepth;
+    float filterAttack, filterDecay, filterSustain, filterRelease;
+    float filterEnvDepth;
     int glideMode;
     bool ignoreVelocity;
     juce::LinearSmoothedValue<float> outputLevelSmoother;
@@ -74,6 +79,10 @@ private:
     float sampleRate;
     float pitchBend;
     float lfo;
+    float resonanceCtl;
+    float pressure;
+    float filterCtl;
+    float filterZip;
     int lfoStep;
     int lastNote;
     bool sustainPedalPressed;

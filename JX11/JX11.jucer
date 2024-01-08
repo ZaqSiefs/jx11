@@ -6,6 +6,7 @@
               pluginManufacturer="Ziefert" pluginManufacturerCode="Zief" pluginCode="JX11">
   <MAINGROUP id="KpcPaw" name="JX11">
     <GROUP id="{F6C11DBB-106B-47A5-F537-2218608DA525}" name="Source">
+      <FILE id="h1Mcd6" name="Filter.h" compile="0" resource="0" file="Source/Filter.h"/>
       <FILE id="z46drK" name="Envelope.h" compile="0" resource="0" file="Source/Envelope.h"/>
       <FILE id="t7xcN2" name="NoiseGenerator.h" compile="0" resource="0"
             file="Source/NoiseGenerator.h"/>

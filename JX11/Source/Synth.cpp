@@ -22,6 +22,10 @@ Synth::Synth()
 void Synth::allocateResources(double sampleRate_, int /*samplesPerBlock*/)
 {
     sampleRate = static_cast<float>(sampleRate_);
+    
+    for (int v = 0; v < MAX_VOICES; ++v) {
+        voices[v].filter.sampleRate = sampleRate;
+    }
 }
 
 void Synth::deallocateRecources()
@@ -43,6 +47,10 @@ void Synth::reset()
     lfoStep = 0;
     modWheel = 0.0f;
     lastNote = 0;
+    resonanceCtl = 1.0f;
+    pressure = 0.0f;
+    filterCtl = 0.0f;
+    filterZip = 0.0f;
 }
 
 void Synth::render(float** outputBuffers, int sampleCount)
@@ -55,6 +63,9 @@ void Synth::render(float** outputBuffers, int sampleCount)
         if (voice.env.isActive()) {
             updatePeriod(voice);
             voice.glideRate = glideRate;
+            voice.filterQ = filterQ * resonanceCtl;
+            voice.pitchBend = pitchBend;
+            voice.filterEnvDepth = filterEnvDepth;
         }
     }
     
@@ -91,6 +102,7 @@ void Synth::render(float** outputBuffers, int sampleCount)
         Voice& voice = voices[v];
         if (!voice.env.isActive()) {
             voice.env.reset();
+            voice.filter.reset();
         }
     }
     
@@ -126,6 +138,11 @@ void Synth::midiMessage(uint8_t data0, uint8_t data1, uint8_t data2)
         // Sustain Pedal
         case 0xB0:
             controlChange(data1, data2);
+            break;
+            
+        // Channel Aftertouch
+        case 0xD0:
+            pressure = 0.0001f * float(data1 * data1);
             break;
     }
 }
@@ -171,6 +188,17 @@ void Synth::startVoice(int v, int note, int vel)
     env.sustainLevel = envSustain;
     env.releaseMultiplier = envRelease;
     env.attack();
+    
+    // Filter
+    voice.cutoff = sampleRate / (period * PI);
+    voice.cutoff *= std::exp(velocitySensitivity * float(vel - 64));
+    
+    Envelope& filterEnv = voice.filterEnv;
+    filterEnv.attackMultiplier = filterAttack;
+    filterEnv.decayMultiplier = filterDecay;
+    filterEnv.sustainLevel = filterSustain;
+    filterEnv.releaseMultiplier = filterRelease;
+    filterEnv.attack();
 }
 
 void Synth::noteOn(int note, int velocity)
@@ -241,6 +269,7 @@ int Synth::findFreeVoice() const
 void Synth::controlChange(uint8_t data1, uint8_t data2)
 {
     switch (data1) {
+        // Sustain Pedal
         case 0x40:
             sustainPedalPressed = (data2 >= 64);
             
@@ -249,8 +278,24 @@ void Synth::controlChange(uint8_t data1, uint8_t data2)
             }
             break;
             
+        // Mod Wheel
         case 0x01:
             modWheel = 0.000005f * float(data2 * data2);
+            break;
+            
+        // Resonance
+        case 0x47:
+            resonanceCtl = 154.0f / float(154 - data2);
+            break;
+            
+        // Filter +
+        case 0x4A:
+            filterCtl = 0.02f * float(data2);
+            break;
+            
+        // Filter -
+        case 0x4B:
+            filterCtl = -0.03f * float(data2);
             break;
             
         default:
@@ -276,6 +321,11 @@ void Synth::restartMonoVoice(int note, int velocity)
     voice.env.level += SILENCE + SILENCE;
     voice.note = note;
     voice.updatePanning();
+    
+    voice.cutoff = sampleRate / (period * PI);
+    if (velocity > 0) {
+        voice.cutoff *= std::exp(velocitySensitivity * float(velocity - 64));
+    }
 }
 
 void Synth::shiftQueuedNotes()
@@ -314,12 +364,17 @@ void Synth::updateLFO()
         
         float vibratoMod = 1.0f + sine * (modWheel + vibrato);
         float pwm = 1.0f + sine * (modWheel + pwmDepth);
+        float filterMod = filterKeyTracking + filterCtl + (filterLFODepth
+                                                           + pressure) * sine;
+        
+        filterZip += 0.005f * (filterMod - filterZip);
         
         for (int v = 0; v < MAX_VOICES; ++v) {
             Voice& voice = voices[v];
             if (voice.env.isActive()) {
                 voice.osc1.modulation = vibratoMod;
                 voice.osc2.modulation = pwm;
+                voice.filterMod = filterZip;
                 voice.updateLFO();
                 updatePeriod(voice);
             }

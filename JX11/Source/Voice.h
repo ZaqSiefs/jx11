@@ -12,6 +12,7 @@
 
 #include "Oscillator.h"
 #include "Envelope.h"
+#include "Filter.h"
 
 struct Voice
 {
@@ -20,10 +21,17 @@ struct Voice
     float panLeft, panRight;
     float target;
     float glideRate;
+    float cutoff;
+    float filterMod;
+    float filterQ;
+    float pitchBend;
+    float filterEnvDepth;
     int note;
     Envelope env;
+    Envelope filterEnv;
     Oscillator osc1;
     Oscillator osc2;
+    Filter filter;
 
     
     void reset()
@@ -35,6 +43,8 @@ struct Voice
         env.reset();
         panLeft = 0.707f;
         panRight = 0.707f;
+        filter.reset();
+        filterEnv.reset();
     }
     
     float render(float input)
@@ -45,6 +55,8 @@ struct Voice
         
         float output = saw + input;
         
+        output = filter.render(output);
+        
         float envelope = env.nextValue();
         return output * envelope;
     }
@@ -52,6 +64,7 @@ struct Voice
     void release()
     {
         env.release();
+        filterEnv.release();
     }
     
     void updatePanning()
@@ -64,5 +77,13 @@ struct Voice
     void updateLFO()
     {
         period += glideRate * (target - period);
+        
+        float fenv = filterEnv.nextValue();
+        
+        float modulatedCutoff = cutoff * std::exp(filterMod + filterEnvDepth
+                                                  * fenv) / pitchBend;
+        
+        modulatedCutoff = std::clamp(modulatedCutoff, 30.0f, 20000.0f);
+        filter.updateCoefficients(modulatedCutoff, filterQ);
     }
 };
