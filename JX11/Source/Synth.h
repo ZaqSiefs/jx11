@@ -40,6 +40,10 @@ public:
     float oscMix;
     float detune;
     float tune;
+    float volumeTrim;
+    float velocitySensitivity;
+    bool ignoreVelocity;
+    juce::LinearSmoothedValue<float> outputLevelSmoother;
     
 private:
     void noteOn(int note, int velocity);

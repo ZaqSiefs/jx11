@@ -38,6 +38,7 @@ void Synth::reset()
     noiseGen.reset();
     pitchBend = 1.0f;
     sustainPedalPressed = false;
+    outputLevelSmoother.reset(sampleRate, 0.05);
 }
 
 void Synth::render(float** outputBuffers, int sampleCount)
@@ -65,6 +66,10 @@ void Synth::render(float** outputBuffers, int sampleCount)
                 float output = voice.render(noise);
                 outputLeft += output * voice.panLeft;
                 outputRight += output * voice.panRight;
+                
+                float outputLevel = outputLevelSmoother.getNextValue();
+                outputLeft *= outputLevel;
+                outputRight *= outputLevel;
             }
         }
         
@@ -82,7 +87,6 @@ void Synth::render(float** outputBuffers, int sampleCount)
             voice.env.reset();
         }
     }
-    
     
     preventGoingDeaf(outputBufferLeft, sampleCount);
     preventGoingDeaf(outputBufferRight, sampleCount);
@@ -129,7 +133,9 @@ void Synth::startVoice(int v, int note, int vel)
     voice.note = note;
     voice.updatePanning();
     
-    voice.osc1.amp = (vel / 127.0f) * 0.5f;
+//    float velCurve = 0.004f * float((vel + 64) * (vel + 64)) - 8.0f; // Original JX11
+    float velCurve = float(vel * vel / 127.0f); // Official MIDI Association Curve;
+    voice.osc1.amp = volumeTrim * velCurve;
     voice.osc1.reset(); // remove if reset on trigger is undesireable.
     
     voice.osc2.amp = voice.osc1.amp * oscMix;
@@ -146,6 +152,8 @@ void Synth::startVoice(int v, int note, int vel)
 
 void Synth::noteOn(int note, int velocity)
 {
+    if (ignoreVelocity) { velocity = 80; }
+    
     int v = 0;
     
     if (numVoices == 1) {
