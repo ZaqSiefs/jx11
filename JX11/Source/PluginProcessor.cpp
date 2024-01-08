@@ -262,6 +262,15 @@ void JX11AudioProcessor::splitBufferByEvents(juce::AudioBuffer<float> &buffer,
 
 void JX11AudioProcessor::handleMIDI(uint8_t data0, uint8_t data1, uint8_t data2)
 {
+    if ((data0 & 0xF0) == 0xB0) {
+        if (data1 == 0x07) {
+            float volumeCtl = float(data2) / 127.0f;
+            outputLevelParam->beginChangeGesture();
+            outputLevelParam->setValueNotifyingHost(volumeCtl);
+            outputLevelParam->endChangeGesture();
+        }
+    }
+    
     if ((data0 & 0xF0) == 0xC0) {
         if (data1 < presets.size()) {
             setCurrentProgram(data1);
