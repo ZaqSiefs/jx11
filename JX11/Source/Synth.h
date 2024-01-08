@@ -31,6 +31,7 @@ public:
     
     
     // Params
+    const int LFO_MAX = 32;
     
     float noiseMix;
     float envAttack;
@@ -42,6 +43,13 @@ public:
     float tune;
     float volumeTrim;
     float velocitySensitivity;
+    float lfoInc;
+    float vibrato;
+    float pwmDepth;
+    float modWheel;
+    float glideRate;
+    float glideBend;
+    int glideMode;
     bool ignoreVelocity;
     juce::LinearSmoothedValue<float> outputLevelSmoother;
     
@@ -51,14 +59,18 @@ private:
     void controlChange(uint8_t data1, uint8_t data2);
     void restartMonoVoice(int note, int velocity);
     void shiftQueuedNotes();
+    void updateLFO();
     float calcPeriod(int v, int note) const;
     int nextQueuedNote();
     int findFreeVoice() const;
+    
 
     
     
     float sampleRate;
     float pitchBend;
+    float lfo;
+    int lfoStep;
     bool sustainPedalPressed;
     std::array<Voice, MAX_VOICES> voices;
     NoiseGenerator noiseGen;
