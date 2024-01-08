@@ -174,7 +174,7 @@ void JX11AudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
-    synth.deallocateResources();
+    synth.deallocateRecources();
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -286,8 +286,6 @@ void JX11AudioProcessor::render(
 void JX11AudioProcessor::reset()
 {
     synth.reset();
-    synth.outputLevelSmoother.setCurrentAndTargetValue(
-            juce::Decibels::decibelsToGain(outputLevelParam->get()));
 }
 
 //==============================================================================
@@ -373,12 +371,6 @@ void JX11AudioProcessor::update()
     float tuneInSemi = -36.3763f - 12.0f * octave - tuning / 100.0f;
     
     synth.tune = sampleRate * std::exp(0.05776226505f * tuneInSemi);
-    
-    synth.volumeTrim = 0.0008f * (3.2f - synth.oscMix - 25.0f // Compensates for additional osc and noise
-                                  * synth.noiseMix) * 1.5f;
-    
-    synth.outputLevelSmoother.setTargetValue(
-                juce::Decibels::decibelsToGain(outputLevelParam->get()));
 }
 
 //==============================================================================
