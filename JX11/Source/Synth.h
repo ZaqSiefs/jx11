@@ -54,6 +54,12 @@ public:
     juce::LinearSmoothedValue<float> outputLevelSmoother;
     
 private:
+    inline void updatePeriod(Voice& voice)
+    {
+        voice.osc1.period = voice.period * pitchBend;
+        voice.osc2.period = voice.osc1.period * detune;
+    }
+    
     void noteOn(int note, int velocity);
     void noteOff(int note);
     void controlChange(uint8_t data1, uint8_t data2);
@@ -63,14 +69,13 @@ private:
     float calcPeriod(int v, int note) const;
     int nextQueuedNote();
     int findFreeVoice() const;
-    
-
-    
+    bool isPlayingLegatoStyle() const;
     
     float sampleRate;
     float pitchBend;
     float lfo;
     int lfoStep;
+    int lastNote;
     bool sustainPedalPressed;
     std::array<Voice, MAX_VOICES> voices;
     NoiseGenerator noiseGen;
