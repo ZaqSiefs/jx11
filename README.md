@@ -46,10 +46,16 @@ above is the lifecycle of most audio plugins, and is true for this plugin. The i
 
 [Osc and Filter algorithms for Analog Synthesis](https://www.researchgate.net/publication/220386519_Oscillator_and_Filter_Algorithms_for_Virtual_Analog_Synthesis)
 
-[Graphing Calculator](https://www.desmos.com/calculator)
+[SVF Linear Trap Optimised](http://cytomic.com/files/dsp/SvfLinearTrapOptimised2.pdf)
+
+[One Pole Linear LowPass](http://cytomic.com/files/dsp/OnePoleLinearLowPass.pdf)
 
 ### User Presets
 
 [Youtube Tutorial](https://www.youtube.com/watch?v=YwAtWuGA4Cg)
 
 [Open Source Implementation](https://github.com/Chowdhury-DSP/chowdsp_utils)
+
+### Extra
+
+[Graphing Calculator](https://www.desmos.com/calculator)
