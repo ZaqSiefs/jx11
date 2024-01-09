@@ -49,6 +49,8 @@ above is the lifecycle of most audio plugins, and is true for this plugin. The i
 
 - I used a VS Code workspace for documenting this project, which is also not needed.
 
+- I configured a filtergraph test throughout the creation process, as shown in the book. This is not needed.
+
 # Useful Links
 
 ### The Audio Programer
